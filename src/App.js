@@ -1,35 +1,44 @@
-import React, { Component } from 'react';
-import GoogleMapReact from 'google-map-react';
+import React from "react";
+import{
+  GoogleMap,
+  useLoadScript,
+  Marker,
+  InfoWindow,
+} from "@react-google-maps/api"
 
-const AnyReactComponent = ({ text }) => <div>{text}</div>;
+import { formatRelative } from "date-fns";
+import mapStyles from "./mapStyles";
 
-class SimpleMap extends Component {
-  static defaultProps = {
-    center: {
-      lat: 59.95,
-      lng: 30.33
-    },
-    zoom: 11
-  };
+const libraries = ["places"];
+const mapContainerStyle = {
+  width: "100vw",
+  height: "100vh"
+};
+const centerpoint={
+  lat:35.0482,
+  lng: -85.0520
+};
+const options = {
+  styles: mapStyles
+};
 
-  render() {
-    return (
-      // Important! Always set the container height explicitly
-      <div style={{ height: '100vh', width: '100vw' }}>
-        <GoogleMapReact
-          bootstrapURLKeys={{ key: process.env.REACT_APP_GOOGLE_MAPS_API_KEY}}
-          defaultCenter={this.props.center}
-          defaultZoom={this.props.zoom}
-        >
-          <AnyReactComponent
-            lat={59.955413}
-            lng={30.337844}
-            text="My Marker"
-          />
-        </GoogleMapReact>
-      </div>
-    );
-  }
+export default function App() {
+  const {isLoaded, loadError} = useLoadScript({
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+    libraries,
+  });
+
+  if(loadError) return "Error Loading Maps";
+  if(!isLoaded) return "Loading Maps";
+
+
+  return <div>
+    <GoogleMap 
+      mapContainerStyle={mapContainerStyle} 
+      zoom={8} 
+      center={centerpoint}
+      options={options}>
+
+    </GoogleMap>
+  </div>
 }
-
-export default SimpleMap;
