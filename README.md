@@ -1,1 +1,3 @@
-lol this is gonna be awful
+REQUIRED DEPENDENCIES:
+react-google-maps
+    - npm install react-google-maps
