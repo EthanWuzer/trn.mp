@@ -1,7 +1,7 @@
 import React from "react";
 import{
   GoogleMap,
-  useLoadScript,
+  LoadScript,
   Marker,
   InfoWindow,
 } from "@react-google-maps/api"
@@ -11,54 +11,116 @@ import { formatRelative } from "date-fns";
 import mapStyles from "./styles/mapStyles";
 
 const libraries = ["places"];
+
 const mapContainerStyle = {
-  width: "100vw",
+  width: "60vw",
   height: "100vh"
 };
-const centerpoint={
+const centers=[{
   lat:35.0482,
   lng:-85.0520
-};
+},
+{
+  lat:34.8,
+  lng:-84.8
+},
+
+];
 const options = {
   styles: mapStyles
 };
 
-export default function Home() {
-  const {isLoaded, loadError} = useLoadScript({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
-    libraries,
-  });
+const onLoad = marker => {
+  console.log('marker: ', marker)
+}
 
-  if(loadError) return "Error Loading Maps";
-  if(!isLoaded) return "Loading Maps";
-
-
-  return(
-  <div>
-    <HomeContainer>
-      <ListContainer>
-
-      </ListContainer>
-      <MapContainer>
+class Map extends React.Component {
+  render() {
+    const {center} = this.props;
+    return (
+      <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
         <GoogleMap 
-        mapContainerStyle={mapContainerStyle} 
-        zoom={8} 
-        center={centerpoint}
-        options={options}>
+          mapContainerStyle={mapContainerStyle} 
+          zoom={8} 
+          center={center}
+          options={options}>
+            <Marker
+              onLoad={onLoad}
+              position={centers[0]}
+            />
+            <Marker
+              onLoad={onLoad}
+              position={centers[1]}
+            />
         </GoogleMap>
-      </MapContainer>
-    </HomeContainer>
+      </LoadScript>
+    );
+  }
+}
 
-  </div>
-)}
+class Home extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      centerpoint: {
+        lat:35.0482,
+        lng:-85.0520
+      }
+    };
+  }
+
+  handleClick = () => {
+    this.setState({centerpoint: {
+      lat:33,
+      lng:-84
+    }})
+  }
+
+  render(){
+    const center = this.state.centerpoint;
+    return(
+        <HomeContainer>
+          <ListContainer>
+            <IntersectionContainer onClick={(e) => this.handleClick()}>
+              <Header>Turner & 13th</Header>
+            </IntersectionContainer>
+            <IntersectionContainer>
+              <Header>Ringgold & Apison</Header>
+            </IntersectionContainer>
+          </ListContainer>
+          <MapContainer>
+            <Map center={center}/>
+          </MapContainer>
+        </HomeContainer>
+    );
+  }
+}
+
+export default Home;
 
 const HomeContainer = styled.div`
   display: flex;
   width: 100vw;
 `
 
+const IntersectionContainer = styled.div`
+  width: 90%;
+  height: 200px;
+  background-color: #fff;
+  margin: auto;
+
+  
+  :hover {
+    cursor: pointer;
+  }
+`
+const Header = styled.h1`
+
+`
+
 const MapContainer = styled.div`
-  width: 60%;
+  position: relative;
+  width: 60vw;
 `
 
 const ListContainer = styled.div`
