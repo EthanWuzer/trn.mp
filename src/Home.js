@@ -31,11 +31,6 @@ const options = {
 };
 
 
-
-const onLoad = marker => {
-  console.log('marker: ', marker)
-}
-
 class Map extends React.Component {
   render() {
     const {center} = this.props;
@@ -47,7 +42,13 @@ class Map extends React.Component {
           center={center}
           options={options}>
           {centers.map(marker => (
-            <Marker key={marker.lat} position ={{lat:marker.lat, lng:marker.lng}} />
+            <Marker 
+              key={marker.lat} 
+              position ={{lat:marker.lat, lng:marker.lng}} 
+              icon ={{
+                url: "/train-outline.svg",
+                scaledSize: new window.google.maps.Size(30,30),
+              }}/>
             ))}
         </GoogleMap>
       </LoadScript>
