@@ -10,6 +10,7 @@ import styled from "styled-components";
 import { formatRelative } from "date-fns";
 import mapStyles from "./styles/mapStyles";
 
+
 const libraries = ["places"];
 
 const mapContainerStyle = {
@@ -31,6 +32,7 @@ const options = {
 };
 
 
+
 class Map extends React.Component {
   render() {
     const {center} = this.props;
@@ -46,9 +48,10 @@ class Map extends React.Component {
               key={marker.lat} 
               position ={{lat:marker.lat, lng:marker.lng}} 
               icon ={{
-                url: "/train-outline.svg",
-                scaledSize: new window.google.maps.Size(30,30),
-              }}/>
+                url: '/train-outline.svg',
+                scaledSize: new window.google.maps.Size(30,30)
+              }
+              }/>
             ))}
         </GoogleMap>
       </LoadScript>
