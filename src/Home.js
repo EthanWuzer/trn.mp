@@ -30,6 +30,8 @@ const options = {
   styles: mapStyles
 };
 
+
+
 const onLoad = marker => {
   console.log('marker: ', marker)
 }
@@ -44,14 +46,9 @@ class Map extends React.Component {
           zoom={8} 
           center={center}
           options={options}>
-            <Marker
-              onLoad={onLoad}
-              position={centers[0]}
-            />
-            <Marker
-              onLoad={onLoad}
-              position={centers[1]}
-            />
+          {centers.map(marker => (
+            <Marker key={marker.lat} position ={{lat:marker.lat, lng:marker.lng}} />
+            ))}
         </GoogleMap>
       </LoadScript>
     );
