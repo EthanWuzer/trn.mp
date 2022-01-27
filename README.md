@@ -8,16 +8,21 @@ Web application that provides real-time railroad crossing activity information b
     - npm i -S styled-components
 
 # Functional Requirements
-- Displays nearby railroad crossings with information including:
+1. Displays railroad crossings in a list with information including: 
     - Intersection name
-    - Crossing state:
+    - Crossing state
         - Clear
-        - Blocked (Moving)
-        - Blocked (Stopped)
-    - Time since crossing was blocked
-- Displays crossing locations on a map with crossing state indicators
-- Ability to search by location
+        - Blocked
+    - Time since crossing was last blocked
+2. Crossings will sort by nearest location (after user acceptance of location access)
+3. Displays crossing locations on a map with crossing state indicators
+    - Center point of current map view, changed by dragging the view, updates the location for the crossing list to sort by
+4. Ability to change location by Google location search
+
 
 # Non-Functional Requirements
-- Immediate provision of information without much or any user input
-- Visually pleasing
+1. Provides crossing information without much or any user input
+2. Supported Browsers:
+    - Chrome 97.0+
+    - Firefox 96.0+
+3. Simple and appealing UI/UX
