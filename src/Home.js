@@ -17,24 +17,42 @@ const mapContainerStyle = {
   width: "60vw",
   height: "100vh"
 };
-const centers=[{
-  lat:35.0482,
-  lng:-85.0520
-},
-{
-  lat:34.8,
-  lng:-84.8
-},
 
-];
 const options = {
   styles: mapStyles
 };
 
 
-
 class Map extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { 
+      locations: [],
+      isLoaded: false,
+      error: null,
+    };
+  }
+
+  async componentDidMount() {
+    fetch("http://train.jpeckham.com:5000/location")
+      .then(response => response.json())
+      .then(
+        (data) => {
+          this.setState({
+            locations: data
+          });
+        },
+        (error) => {
+          this.setState({
+            isLoaded: true,
+            error
+          });
+        }
+      )
+  }
+
   render() {
+    console.log(this.state.locations)
     const {center} = this.props;
     return (
       <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
@@ -43,16 +61,19 @@ class Map extends React.Component {
           zoom={8} 
           center={center}
           options={options}>
-          {centers.map(marker => (
+          {this.state.locations.map(marker => 
+          {
+            return(
             <Marker 
-              key={marker.lat} 
-              position ={{lat:marker.lat, lng:marker.lng}} 
+              key={marker.id} 
+              position ={{lat:marker.latitude, lng:marker.longitude}} 
               icon ={{
                 url: '/train-outline.svg',
-                scaledSize: new window.google.maps.Size(30,30)
-              }
-              }/>
-            ))}
+                scaledSize: new window.google.maps.Size(30,30),
+              }}
+            />
+            )}
+          )}
         </GoogleMap>
       </LoadScript>
     );
