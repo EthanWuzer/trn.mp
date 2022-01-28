@@ -34,10 +34,19 @@ class Map extends React.Component {
   }
 
   async componentDidMount() {
-    fetch("http://train.jpeckham.com:5000/location")
+    await fetch("http://train.jpeckham.com:5000/location")
       .then(response => response.json())
       .then(
-        (data) => {
+        async (data) => {
+          for (let value of data) {
+            await fetch("http://train.jpeckham.com:5000/state/" + value.id)
+              .then(innerResponse => innerResponse.json())
+              .then(
+                (innerData) => {
+                  value.status = innerData.state;
+                }
+              )
+          }
           this.setState({
             locations: data
           });
@@ -52,23 +61,25 @@ class Map extends React.Component {
   }
 
   render() {
-    console.log(this.state.locations)
+    console.log(Object.entries(this.state.locations));
     const {center} = this.props;
     return (
       <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
         <GoogleMap 
           mapContainerStyle={mapContainerStyle} 
-          zoom={8} 
+          zoom={12} 
           center={center}
           options={options}>
-          {this.state.locations.map(marker => 
+          {this.state.locations.map(marker =>
           {
+            console.log("Marker: ", Object.entries(marker));
+            console.log("Maker Status: ", marker.status);
             return(
             <Marker 
               key={marker.id} 
               position ={{lat:marker.latitude, lng:marker.longitude}} 
               icon ={{
-                url: '/train-outline.svg',
+                url: marker.status ? '/train-outline.svg' : '/logo192.png',
                 scaledSize: new window.google.maps.Size(30,30),
               }}
             />
