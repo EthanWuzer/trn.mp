@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import{
   GoogleMap,
   LoadScript,
@@ -7,8 +7,11 @@ import{
 } from "@react-google-maps/api"
 import styled from "styled-components";
 
+import moment from 'moment';
+
 import { formatRelative } from "date-fns";
 import mapStyles from "./styles/mapStyles";
+import { getDefaultNormalizer } from "@testing-library/react";
 
 
 const libraries = ["places"];
@@ -17,84 +20,107 @@ const mapContainerStyle = {
   width: "60vw",
   height: "100vh"
 };
-const centers=[{
-  lat:35.0482,
-  lng:-85.0520
-},
-{
-  lat:34.8,
-  lng:-84.8
-},
 
-];
 const options = {
   styles: mapStyles
 };
 
 
+function Map(props) {
+    console.log(Object.entries(props.locations));
 
-class Map extends React.Component {
-  render() {
-    const {center} = this.props;
     return (
       <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
         <GoogleMap 
           mapContainerStyle={mapContainerStyle} 
-          zoom={8} 
-          center={center}
+          zoom={12} 
+          center={props.center}
           options={options}>
-          {centers.map(marker => (
+          {props.locations.map(marker =>
+          {
+            console.log("Marker: ", Object.entries(marker));
+            console.log("Maker Status: ", marker.status);
+            return(
             <Marker 
-              key={marker.lat} 
-              position ={{lat:marker.lat, lng:marker.lng}} 
+              key={marker.id} 
+              position ={{lat:marker.latitude, lng:marker.longitude}} 
               icon ={{
-                url: '/train-outline.svg',
-                scaledSize: new window.google.maps.Size(30,30)
-              }
-              }/>
-            ))}
+                url: marker.status ? '/train-outline.svg' : '/logo192.png',
+                scaledSize: new window.google.maps.Size(30,30),
+              }}
+            />
+            )}
+          )}
         </GoogleMap>
       </LoadScript>
     );
-  }
+  
 }
 
-class Home extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      centerpoint: {
-        lat:35.0482,
-        lng:-85.0520
-      }
-    };
+function Home() {
+  const [centerpoint, setCenterpoint] = useState({ lat:35.08, lng:-85.04 })
+  const [locations, setLocations] = useState([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState(null);
+
+  const getDate = (timeIn) => {
+    return moment(timeIn).format('MMMM Do YYYY, h:mm a');
   }
 
-  handleClick = () => {
-    this.setState({centerpoint: {
-      lat:33,
-      lng:-84
-    }})
+  const getDuration = (timeIn) => {
+    return moment(timeIn).fromNow(); 
   }
 
-  render(){
-    const center = this.state.centerpoint;
-    return(
-        <HomeContainer>
-          <ListContainer>
-            <IntersectionContainer onClick={(e) => this.handleClick()}>
-              <Header>Turner & 13th</Header>
-            </IntersectionContainer>
-            <IntersectionContainer>
-              <Header>Ringgold & Apison</Header>
-            </IntersectionContainer>
-          </ListContainer>
-          <MapContainer>
-            <Map center={center}/>
-          </MapContainer>
-        </HomeContainer>
-    );
-  }
+  useEffect(() => {
+    async function fetchData() {
+      await fetch("http://train.jpeckham.com:5000/location")
+      .then(response => response.json())
+        .then(
+          async (data) => {
+            for (let value of data) {
+              await fetch("http://train.jpeckham.com:5000/state/" + value.id)
+                .then(innerResponse => innerResponse.json())
+                .then(
+                  (innerData) => {
+                    value.start = getDate(innerData.date * 1000);
+                    value.duration = getDuration(innerData.date * 1000);
+                    value.status = innerData.state;
+                  }
+                )
+            }
+            setIsLoaded(true);
+            setLocations(data);
+          },
+          (error) => {
+            setIsLoaded(true);
+            setError(error);
+          }
+        )
+    }
+    fetchData();
+  }, [])
+
+  
+
+  const handleClick = useCallback(() => {
+    setCenterpoint({lat:33, lng:-84})
+  });
+  return(
+      <HomeContainer>
+        <ListContainer>
+          {locations.map(intersection => {
+            return(
+              <IntersectionContainer onClick={(e) => handleClick()}>
+                <Header>{intersection.title}</Header>
+              </IntersectionContainer>
+            )
+          })}
+        </ListContainer>
+        <MapContainer>
+          <Map center={centerpoint} locations={locations}/>
+        </MapContainer>
+      </HomeContainer>
+  );
 }
 
 export default Home;
