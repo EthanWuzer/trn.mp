@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import{
   GoogleMap,
   LoadScript,
@@ -23,54 +23,49 @@ const options = {
 };
 
 
-class Map extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { 
-      locations: [],
-      isLoaded: false,
-      error: null,
-    };
-  }
+function Map(props) {
 
-  async componentDidMount() {
-    await fetch("http://train.jpeckham.com:5000/location")
+  const [locations, setLocations] = useState([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      await fetch("http://train.jpeckham.com:5000/location")
       .then(response => response.json())
-      .then(
-        async (data) => {
-          for (let value of data) {
-            await fetch("http://train.jpeckham.com:5000/state/" + value.id)
-              .then(innerResponse => innerResponse.json())
-              .then(
-                (innerData) => {
-                  value.status = innerData.state;
-                }
-              )
+        .then(
+          async (data) => {
+            for (let value of data) {
+              await fetch("http://train.jpeckham.com:5000/state/" + value.id)
+                .then(innerResponse => innerResponse.json())
+                .then(
+                  (innerData) => {
+                    value.status = innerData.state;
+                  }
+                )
+            }
+            setIsLoaded(true);
+            setLocations(data);
+          },
+          (error) => {
+            setIsLoaded(true);
+            setError(error);
           }
-          this.setState({
-            locations: data
-          });
-        },
-        (error) => {
-          this.setState({
-            isLoaded: true,
-            error
-          });
-        }
-      )
-  }
+        )
+    }
+    fetchData();
+  }, [])
 
-  render() {
-    console.log(Object.entries(this.state.locations));
-    const {center} = this.props;
+    console.log(Object.entries(locations));
+
     return (
       <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
         <GoogleMap 
           mapContainerStyle={mapContainerStyle} 
           zoom={12} 
-          center={center}
+          center={props.center}
           options={options}>
-          {this.state.locations.map(marker =>
+          {locations.map(marker =>
           {
             console.log("Marker: ", Object.entries(marker));
             console.log("Maker Status: ", marker.status);
@@ -88,7 +83,7 @@ class Map extends React.Component {
         </GoogleMap>
       </LoadScript>
     );
-  }
+  
 }
 
 class Home extends React.Component {
@@ -96,8 +91,8 @@ class Home extends React.Component {
     super(props);
     this.state = {
       centerpoint: {
-        lat:35.0482,
-        lng:-85.0520
+        lat:35.08,
+        lng:-85.04
       }
     };
   }
