@@ -7,8 +7,11 @@ import{
 } from "@react-google-maps/api"
 import styled from "styled-components";
 
+import moment from 'moment';
+
 import { formatRelative } from "date-fns";
 import mapStyles from "./styles/mapStyles";
+import { getDefaultNormalizer } from "@testing-library/react";
 
 
 const libraries = ["places"];
@@ -60,6 +63,14 @@ function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(null);
 
+  const getDate = (timeIn) => {
+    return moment(timeIn).format('MMMM Do YYYY, h:mm a');
+  }
+
+  const getDuration = (timeIn) => {
+    return moment(timeIn).fromNow(); 
+  }
+
   useEffect(() => {
     async function fetchData() {
       await fetch("http://train.jpeckham.com:5000/location")
@@ -71,6 +82,8 @@ function Home() {
                 .then(innerResponse => innerResponse.json())
                 .then(
                   (innerData) => {
+                    value.start = getDate(innerData.date * 1000);
+                    value.duration = getDuration(innerData.date * 1000);
                     value.status = innerData.state;
                   }
                 )
@@ -86,6 +99,8 @@ function Home() {
     }
     fetchData();
   }, [])
+
+  
 
   const handleClick = useCallback(() => {
     setCenterpoint({lat:33, lng:-84})
