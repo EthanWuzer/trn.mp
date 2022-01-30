@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import{
   GoogleMap,
   LoadScript,
@@ -24,7 +24,38 @@ const options = {
 
 
 function Map(props) {
+    console.log(Object.entries(props.locations));
 
+    return (
+      <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
+        <GoogleMap 
+          mapContainerStyle={mapContainerStyle} 
+          zoom={12} 
+          center={props.center}
+          options={options}>
+          {props.locations.map(marker =>
+          {
+            console.log("Marker: ", Object.entries(marker));
+            console.log("Maker Status: ", marker.status);
+            return(
+            <Marker 
+              key={marker.id} 
+              position ={{lat:marker.latitude, lng:marker.longitude}} 
+              icon ={{
+                url: marker.status ? '/train-outline.svg' : '/logo192.png',
+                scaledSize: new window.google.maps.Size(30,30),
+              }}
+            />
+            )}
+          )}
+        </GoogleMap>
+      </LoadScript>
+    );
+  
+}
+
+function Home() {
+  const [centerpoint, setCenterpoint] = useState({ lat:35.08, lng:-85.04 })
   const [locations, setLocations] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(null);
@@ -56,72 +87,25 @@ function Map(props) {
     fetchData();
   }, [])
 
-    console.log(Object.entries(locations));
-
-    return (
-      <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
-        <GoogleMap 
-          mapContainerStyle={mapContainerStyle} 
-          zoom={12} 
-          center={props.center}
-          options={options}>
-          {locations.map(marker =>
-          {
-            console.log("Marker: ", Object.entries(marker));
-            console.log("Maker Status: ", marker.status);
+  const handleClick = useCallback(() => {
+    setCenterpoint({lat:33, lng:-84})
+  });
+  return(
+      <HomeContainer>
+        <ListContainer>
+          {locations.map(intersection => {
             return(
-            <Marker 
-              key={marker.id} 
-              position ={{lat:marker.latitude, lng:marker.longitude}} 
-              icon ={{
-                url: marker.status ? '/train-outline.svg' : '/logo192.png',
-                scaledSize: new window.google.maps.Size(30,30),
-              }}
-            />
-            )}
-          )}
-        </GoogleMap>
-      </LoadScript>
-    );
-  
-}
-
-class Home extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      centerpoint: {
-        lat:35.08,
-        lng:-85.04
-      }
-    };
-  }
-
-  handleClick = () => {
-    this.setState({centerpoint: {
-      lat:33,
-      lng:-84
-    }})
-  }
-
-  render(){
-    const center = this.state.centerpoint;
-    return(
-        <HomeContainer>
-          <ListContainer>
-            <IntersectionContainer onClick={(e) => this.handleClick()}>
-              <Header>Turner & 13th</Header>
-            </IntersectionContainer>
-            <IntersectionContainer>
-              <Header>Ringgold & Apison</Header>
-            </IntersectionContainer>
-          </ListContainer>
-          <MapContainer>
-            <Map center={center}/>
-          </MapContainer>
-        </HomeContainer>
-    );
-  }
+              <IntersectionContainer onClick={(e) => handleClick()}>
+                <Header>{intersection.title}</Header>
+              </IntersectionContainer>
+            )
+          })}
+        </ListContainer>
+        <MapContainer>
+          <Map center={centerpoint} locations={locations}/>
+        </MapContainer>
+      </HomeContainer>
+  );
 }
 
 export default Home;
