@@ -3,46 +3,17 @@ import{
   GoogleMap,
   Marker,
 } from "@react-google-maps/api"
+
 import styled from "styled-components";
-
-import usePlacesAutocomplete, {
-  getGeocode,
-  getLatLng,
-} from "use-places-autocomplete";
-
-import {
-  Combobox,
-  ComboboxInput,
-  ComboboxPopover,
-  ComboboxList,
-  ComboboxOption,
-} from "@reach/combobox";
-
-import "@reach/combobox/styles.css"
-
 import moment from 'moment';
-
 import mapStyles from "./styles/mapStyles";
-import { getDefaultNormalizer } from "@testing-library/react";
+import Search from "./tools/Search.js";
+import Locate from "./tools/Locate";
+import Crossing from "./tools/Crossing";
+import sortLocations from "./tools/SortLocations";
 
-const colorRed = `#E81A24`;
-const colorGreen = `#0DA245`;
-
-// Accepts array of Locations and Center Point. Sorts by nearest to center.
-function sortLocations(locations, center) {
-  // https://www.tutorialspoint.com/sort-array-of-points-by-ascending-distance-from-a-given-point-javascript
-
-  // Find distance from center
-  const distance = (coor1, coor2) => {
-    const x = coor2.lat - coor1.latitude;
-    const y = coor2.lng - coor1.longitude;
-    return Math.sqrt((x*x) + (y*y));
-  };
-
-  // Sort by distance from center
-  const sorter = (a, b) => distance(a, center) - distance(b, center);
-  return locations.sort(sorter);
-};
+export const colorRed = `#E81A24`;
+export const colorGreen = `#0DA245`;
 
 // Outputs Google Map Component
 function Map(props) {
@@ -89,112 +60,6 @@ function Map(props) {
   );
 }
 
-// Outputs A Single Crossing Visual Component
-function Crossing(props) {
-  return (
-    // Main Container
-    <IntersectionContainer
-      onClick={(e) => props.onClick(props.latitude, props.longitude)}
-      style={{borderColor: props.status ? colorRed : colorGreen}}
-    >
-      {/* Left Side of Container Including Title & Time Information */}
-      <IntersectionLeft>
-        <IntersectionTitle>{props.title}</IntersectionTitle>
-        <IntersectionTimeContainer>
-          <IntersectionTime style={{color: props.status ? colorRed : colorGreen}}>Since: {props.start}</IntersectionTime>
-          {props.status ?
-            <IntersectionDuration color={colorRed}>Duration: {props.duration}</IntersectionDuration>
-            : null
-          }
-        </IntersectionTimeContainer>
-      </IntersectionLeft>
-      {/* Right Side of Container Including State Icon & Text */}
-      <IntersectionRight>
-        {props.status ? 
-          <StatusIcon alt="Blocked Icon" src="/blocked.svg" />
-          :
-          <StatusIcon alt="Clear Icon" src="/clear.svg" />
-        }
-        <StatusText style={{color: props.status ? colorRed : colorGreen}}>{props.status ? 'Blocked' : 'Clear'}</StatusText>
-      </IntersectionRight>
-    </IntersectionContainer>
-  )
-};
-
-// This is the function called to locate the user based on the browsers geolocation service
-function Locate(props){
-  // All it does is return a container that contains the latitude and longitude reciueved from the geolocation service
-  return (
-    <LocateContainer
-      onClick={() =>{
-        //Uses navigator.geolocation, created by firefox. Compatible with all modern browsers
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            //Here is where it re sorts the markers based on distance and sets the new centerpoint
-            props.setLocations(sortLocations(props.locations, {lat: position.coords.latitude, lng: position.coords.longitude}));
-            props.updateCenter({
-              lat:position.coords.latitude,
-              lng:position.coords.longitude,
-            });
-            props.setZoom(12);
-          }, 
-          () => null
-        )
-      }}
-    >
-      <img src="compass.svg" alt="compass - locate me"/>
-    </LocateContainer>
-    )
-}
-
-//This app uses use-places-autocomplete alongside combobox to search
-function Search(props){
-
-  const {
-    ready,
-    value,
-    suggestions: { status, data },
-    setValue,
-    clearSuggestions
-  } = usePlacesAutocomplete();
-  //usePlacesAutocomplete uses the Google places API to generate search results
-
-  const handleInput = (e) => {
-    setValue(e.target.value);
-  };
-
-  //When a suggestion is selected, the geocode is turned into a lat and lng value
-  const handleSelect = (val) => {
-    setValue(val, false);
-    getGeocode({ address: val })
-      .then((results) => getLatLng(results[0]))
-      .then(({ lat, lng }) => {
-        //The markers are then reorganized and the centerpoint changed to the selected location
-        props.setLocations(sortLocations(props.locations, {lat: lat, lng: lng}));
-        props.updateCenter({lat: lat,lng: lng});
-        props.setZoom(13);
-      })
-      .catch((error) => {
-        console.log("Error: ", error);
-      });
-  };
-
-  return (
-    //This function returns a container containg the autocomplete results in a combobox.
-    <SearchContainer onSelect={handleSelect}>
-      <ComboboxInput value={value} onChange={handleInput} disabled={!ready} placeholder="Search"/>
-      <ComboboxPopover>
-        <ComboboxList>
-          {status === "OK" &&
-            data.map(({ place_id, description }) => (
-              //Each suggestion comes with its own unique id, and a description
-              <ComboboxOption key={place_id} value={description} />
-            ))}
-        </ComboboxList>
-      </ComboboxPopover>
-    </SearchContainer>
-  );
-}
 
 // Main View Component
 function Home() {
@@ -305,6 +170,7 @@ function Home() {
 
 export default Home;
 
+
 // BEGIN -- General Styles
 const HomeContainer = styled.div`
   display: flex;
@@ -322,23 +188,7 @@ const Header = styled.h1`
   margin: 25px;
   color: #333333;
 `
-const SearchContainer = styled(Combobox)`
-  display: flex;
 
-  input {
-    width: 20vw;
-    border: 2px solid #eeeeee;
-    border-radius: 5px;
-    margin: auto 25px;
-    font-size: 1rem;
-    color: #333333;
-    padding: 10px;
-
-    @media (max-width: 1248px) {
-      width: 40vw;
-    }
-  }
-`
 const InnerContainer = styled.div`
   display: flex;
   flex-direction: row;
@@ -381,60 +231,6 @@ const ListHeader = styled.h3`
 `
 // END -- ListContainer Styles
 
-// BEGIN -- IntersectionContainer Styles
-const IntersectionContainer = styled.div`
-  height: 125px;
-  background-color: #fff;
-  margin: 25px 25px 0 25px;
-  padding: 15px;
-  display: flex;
-  flex-direction: row;
-  border: 2px solid;
-  border-radius: 5px;
-
-  :hover {
-    cursor: pointer;
-  }
-`
-const IntersectionLeft = styled.div`
-  width: 70%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-`
-const IntersectionRight = styled.div`
-  width: 30%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-end;
-`
-const IntersectionTitle = styled.h2`
-  color: #333333;
-  margin: 0;
-`
-const IntersectionTimeContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-`
-const IntersectionTime = styled.h3`
-  color: #333333;
-  margin: 0;
-`
-const IntersectionDuration = styled.h3`
-  color: ${props => props.color};
-  margin: 0;
-`
-const StatusIcon = styled.img`
-  width: 50px;
-  height: auto;
-`
-const StatusText = styled.h2`
-  color: #333333;
-  margin: 0;
-`
-// END -- IntersectionContainer Styles
-
 // BEGIN -- MapContainer Styles
 const MapContainer = styled.div`
   position: relative;
@@ -452,23 +248,5 @@ const MapContainer = styled.div`
     height: 50vh;
   }
 `
-const LocateContainer = styled.button`
-  background: rgb(255, 255, 255) none repeat scroll 0% 0%;
-  border: 0px none;
-  margin: 10px;
-  padding: 0px;
-  text-transform: none;
-  appearance: none;
-  position: absolute;
-  cursor: pointer;
-  user-select: none;
-  border-radius: 2px;
-  height: 40px;
-  width: 40px;
-  box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 4px -1px;
-  overflow: hidden;
-  top: 50px;
-  right: 0px;
-  z-index: 5;
-`
+
 // END -- MapContainer Styles
