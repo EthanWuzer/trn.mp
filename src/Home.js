@@ -60,6 +60,7 @@ function Map(props) {
   );
 }
 
+
 // Main View Component
 function Home() {
   // Initialize State Variables
