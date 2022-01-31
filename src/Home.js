@@ -4,8 +4,24 @@ import{
   LoadScript,
   Marker,
   InfoWindow,
+  useLoadScript,
 } from "@react-google-maps/api"
 import styled from "styled-components";
+
+import usePlacesAutocomplete, {
+  getGeocode,
+  getLatLng,
+} from "use-places-autocomplete";
+
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxPopover,
+  ComboboxList,
+  ComboboxOption,
+} from "@reach/combobox";
+
+import "@reach/combobox/styles.css"
 
 import moment from 'moment';
 
@@ -30,7 +46,9 @@ function Map(props) {
     console.log(Object.entries(props.locations));
 
     return (
-      <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
+      //<LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
+        <div>
+        <Search />
         <GoogleMap 
           mapContainerStyle={mapContainerStyle} 
           zoom={12} 
@@ -52,11 +70,43 @@ function Map(props) {
             )}
           )}
         </GoogleMap>
-      </LoadScript>
+        </div>
+     // </LoadScript>
     );
   
 }
 
+function Search(){
+  const {
+    ready,
+    value,
+    suggestions: { status, data },
+    setValue,
+    clearSuggestions
+  } = usePlacesAutocomplete();
+
+  const handleInput = (e) => {
+    setValue(e.target.value);
+  };
+
+  const handleSelect = (val) => {
+    setValue(val, false);
+  };
+
+  return (
+    <Combobox onSelect={handleSelect}>
+      <ComboboxInput value={value} onChange={handleInput} disabled={!ready} />
+      <ComboboxPopover>
+        <ComboboxList>
+          {status === "OK" &&
+            data.map(({ place_id, description }) => (
+              <ComboboxOption key={place_id} value={description} />
+            ))}
+        </ComboboxList>
+      </ComboboxPopover>
+    </Combobox>
+  );
+}
 function Home() {
   const [centerpoint, setCenterpoint] = useState({ lat:35.08, lng:-85.04 })
   const [locations, setLocations] = useState([]);
@@ -117,6 +167,7 @@ function Home() {
           })}
         </ListContainer>
         <MapContainer>
+          
           <Map center={centerpoint} locations={locations}/>
         </MapContainer>
       </HomeContainer>
