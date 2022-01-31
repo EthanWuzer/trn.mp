@@ -1,12 +1,17 @@
 import sortLocations from './SortLocations';
 import styled from 'styled-components';
 
+
+//The locate function uses the browsers built in geolocation service to find the user
 export default function Locate(props){
     return (
+      //returns a container which contains the geo-data returned by the browser
       <LocateContainer
         onClick={() =>{
           navigator.geolocation.getCurrentPosition(
             (position) => {
+              //The latitude and longitude are extracted from the geodata
+              //The markers are then sorted by distance to the centerpoint, and the centerpoint is updated
               props.setLocations(sortLocations(props.locations, {lat: position.coords.latitude, lng: position.coords.longitude}));
               props.updateCenter({
                 lat:position.coords.latitude,
