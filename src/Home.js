@@ -73,7 +73,7 @@ function Map(props) {
             key={marker.id} 
             position ={{lat:marker.latitude, lng:marker.longitude}} 
             icon ={{
-              url: marker.status ? '/logo192.png' : '/train-outline.svg',
+              url: marker.status ? '/blocked.svg' : '/clear.svg',
               scaledSize: new window.google.maps.Size(30,30),
             }}
           />
@@ -103,9 +103,9 @@ function Crossing(props) {
       </IntersectionLeft>
       <IntersectionRight>
         {props.status ? 
-          <StatusIcon alt="Blocked Icon" src="/logo192.png" />
+          <StatusIcon alt="Blocked Icon" src="/blocked.svg" />
           :
-          <StatusIcon alt="Clear Icon" src="/train-outline.svg" />
+          <StatusIcon alt="Clear Icon" src="/clear.svg" />
         }
         <StatusText style={{color: props.status ? colorRed : colorGreen}}>{props.status ? 'Blocked' : 'Clear'}</StatusText>
       </IntersectionRight>

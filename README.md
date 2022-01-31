@@ -1,11 +1,17 @@
 # trn.mp
-Web application that provides real-time railroad crossing activity information by displaying crossing states such as clear or blocked (moving or stopped). Includes map for browing with easy to understand indicators of crossing states.
+Web application that provides real-time railroad crossing activity information by displaying crossing states such as clear or blocked (moving or stopped). Includes map for browsing with easy to understand indicators of crossing states.
+
 
 # Required Dependencies
 - react-google-maps
     - npm i -S @react-google-maps/api
 - styled-components
     - npm i -S styled-components
+- use-places-autocomplete
+    - npm i -S use-places-autocomplete
+- @reach/combobox
+    - npm i -S @reach/combobox
+
 
 # Functional Requirements
 1. Displays railroad crossings in a list with information including: 
