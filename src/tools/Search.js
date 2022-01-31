@@ -17,6 +17,8 @@ getLatLng,
 import sortLocations from './SortLocations';
 import styled from 'styled-components';
 
+
+//Search uses a combination of use-places-autocomplete and combobox to create a dropdown of locations based on googles places api
 export default function Search(props){
 
   const {
@@ -26,17 +28,19 @@ export default function Search(props){
     setValue,
     clearSuggestions
   } = usePlacesAutocomplete();
+  //usePlacesAutocomplete accesses the google places API and recieves suggested locations
 
   const handleInput = (e) => {
     setValue(e.target.value);
   };
 
   const handleSelect = (val) => {
+    //When a suggestion is selected, the geodata recieved has its latitude and longitude extracted
     setValue(val, false);
     getGeocode({ address: val })
       .then((results) => getLatLng(results[0]))
       .then(({ lat, lng }) => {
-        console.log("Coordinates: ", { lat, lng });
+        //The markers are sorted based on distance from the center point and the centerpoint is changed to the selected location
         props.setLocations(sortLocations(props.locations, {lat: lat, lng: lng}));
         props.updateCenter({lat: lat,lng: lng});
         props.setZoom(13);
@@ -47,6 +51,8 @@ export default function Search(props){
   };
 
   return (
+    //This function returns a container containing all the suggested locations.
+    //Combobox is used because it allows for an easy and simple way of displaying the search results
     <SearchContainer onSelect={handleSelect}>
       <ComboboxInput value={value} onChange={handleInput} disabled={!ready} placeholder="Search"/>
       <ComboboxPopover>
