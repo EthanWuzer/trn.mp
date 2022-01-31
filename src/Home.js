@@ -106,18 +106,26 @@ export default function Home() {
           }
         )
     }
+
     fetchData();
+    const intervalId = setInterval(() => {
+      console.log("refresh")
+      fetchData();
+    }, 10000)
+    
 
     // Get User Location & Update Map View/List Sorting Accordingly
     navigator.geolocation.getCurrentPosition(
-    (position) => {
-      setCenterpoint({
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-      });
-      setZoomSize(13);
-    }, () => null
-  )
+      (position) => {
+        setCenterpoint({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setZoomSize(13);
+      }, () => null
+    )
+
+    return () => clearInterval(intervalId);
   }, [])
 
   // Change Map View and List Sorting On Click of A Crossing
@@ -245,5 +253,4 @@ const MapContainer = styled.div`
     height: 50vh;
   }
 `
-
 // END -- MapContainer Styles
