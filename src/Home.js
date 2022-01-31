@@ -25,55 +25,53 @@ import "@reach/combobox/styles.css"
 
 import moment from 'moment';
 
-import { formatRelative } from "date-fns";
 import mapStyles from "./styles/mapStyles";
 import { getDefaultNormalizer } from "@testing-library/react";
 
-
-const libraries = ["places"];
-
-const mapContainerStyle = {
-  width: "60vw",
-  height: "100vh"
-};
-
-const options = {
-  styles: mapStyles
-};
-
+const colorRed = `#E81A24`;
+const colorGreen = `#0DA245`;
 
 function Map(props) {
-    console.log(Object.entries(props.locations));
+  const [mapRef, setMapRef] = useState(null);
 
-    return (
-      //<LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
-        <div>
-        <Search />
-        <GoogleMap 
-          mapContainerStyle={mapContainerStyle} 
-          zoom={12} 
-          center={props.center}
-          options={options}>
-          {props.locations.map(marker =>
-          {
-            console.log("Marker: ", Object.entries(marker));
-            console.log("Maker Status: ", marker.status);
-            return(
-            <Marker 
-              key={marker.id} 
-              position ={{lat:marker.latitude, lng:marker.longitude}} 
-              icon ={{
-                url: marker.status ? '/train-outline.svg' : '/logo192.png',
-                scaledSize: new window.google.maps.Size(30,30),
-              }}
-            />
-            )}
+  const handleCenterChanged = () => {
+    if (mapRef) {
+      const newCenter = mapRef.getCenter().toJSON();
+      props.updateCenter({ lat: newCenter.lat, lng: newCenter.lng});
+    }
+  };
+
+
+  return (
+
+      <GoogleMap 
+        mapContainerStyle={{
+          width: "100%",
+          height: "100%"
+        }}
+        onLoad={map => setMapRef(map)}
+        onDragEnd={() => handleCenterChanged()}
+        onZoomChanged={() => handleCenterChanged()}
+        zoom={props.zoomSize} 
+        center={props.center}
+        options={{styles: mapStyles}}>
+        {props.locations.map(marker =>
+        {
+          return(
+          <Marker 
+            key={marker.id} 
+            position ={{lat:marker.latitude, lng:marker.longitude}} 
+            icon ={{
+              url: marker.status ? '/logo192.png' : '/train-outline.svg',
+              scaledSize: new window.google.maps.Size(30,30),
+            }}
+          />
           )}
-        </GoogleMap>
-        </div>
-     // </LoadScript>
-    );
-  
+        )}
+      </GoogleMap>
+
+  );
+
 }
 
 function Search(){
@@ -109,12 +107,13 @@ function Search(){
 }
 function Home() {
   const [centerpoint, setCenterpoint] = useState({ lat:35.08, lng:-85.04 })
+  const [zoomSize, setZoomSize] = useState(13);
   const [locations, setLocations] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(null);
 
   const getDate = (timeIn) => {
-    return moment(timeIn).format('MMMM Do YYYY, h:mm a');
+    return moment(timeIn).format('MMMM Do, h:mm a');
   }
 
   const getDuration = (timeIn) => {
@@ -140,7 +139,7 @@ function Home() {
             }
             setIsLoaded(true);
             setLocations(data);
-          },
+          }, 
           (error) => {
             setIsLoaded(true);
             setError(error);
@@ -151,25 +150,51 @@ function Home() {
   }, [])
 
   
+  const handleClick = useCallback((latitude, longitude) => {
+    setCenterpoint({lat: latitude, lng: longitude});
+    setZoomSize(16);
+  }, []);
 
-  const handleClick = useCallback(() => {
-    setCenterpoint({lat:33, lng:-84})
-  });
   return(
       <HomeContainer>
-        <ListContainer>
-          {locations.map(intersection => {
-            return(
-              <IntersectionContainer onClick={(e) => handleClick()}>
-                <Header>{intersection.title}</Header>
-              </IntersectionContainer>
-            )
-          })}
-        </ListContainer>
-        <MapContainer>
-          
-          <Map center={centerpoint} locations={locations}/>
-        </MapContainer>
+        <Header>trn.mp</Header>
+        <InnerContainer>
+          <ListContainer>
+            <ListHeader>
+              crossings.
+            </ListHeader>
+            {locations.map(intersection => (
+                <IntersectionContainer
+                  key={intersection.id}
+                  onClick={(e) => handleClick(intersection.latitude, intersection.longitude)}
+                  style={{borderColor: intersection.status ? colorRed : colorGreen}}
+                >
+                  <IntersectionLeft>
+                    <IntersectionTitle>{intersection.title}</IntersectionTitle>
+                    <IntersectionTimeContainer>
+                      <IntersectionTime style={{color: intersection.status ? colorRed : colorGreen}}>Since: {intersection.start}</IntersectionTime>
+                      {intersection.status ?
+                        <IntersectionDuration color={colorRed}>Duration: {intersection.duration}</IntersectionDuration>
+                        : null
+                      }
+                    </IntersectionTimeContainer>
+                  </IntersectionLeft>
+                  <IntersectionRight>
+                    {intersection.status ? 
+                      <StatusIcon alt="Blocked Icon" src="/logo192.png" />
+                      :
+                      <StatusIcon alt="Clear Icon" src="/train-outline.svg" />
+                    }
+                    <StatusText style={{color: intersection.status ? colorRed : colorGreen}}>{intersection.status ? 'Blocked' : 'Clear'}</StatusText>
+                  </IntersectionRight>
+                </IntersectionContainer>
+              )
+            )}
+          </ListContainer>
+          <MapContainer>
+            <Map center={centerpoint} locations={locations} zoomSize={zoomSize} updateCenter={setCenterpoint}/>
+          </MapContainer>
+        </InnerContainer>
       </HomeContainer>
   );
 }
@@ -178,31 +203,119 @@ export default Home;
 
 const HomeContainer = styled.div`
   display: flex;
-  width: 100vw;
+  flex-direction: column;
+`
+const Header = styled.h1`
+  margin: 25px;
+  color: #333333;
+`
+const InnerContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
+  @media (max-width: 1248px) {
+    flex-direction: column-reverse;
+  }
 `
 
-const IntersectionContainer = styled.div`
-  width: 90%;
-  height: 200px;
-  background-color: #fff;
-  margin: auto;
 
-  
+const ListContainer = styled.div`
+  position: relative;
+  width: 30vw;
+  height: 85vh;
+  margin: 0 25px 0 0;
+  background-color: #eeeeee;
+  border: 3px solid #eeeeee;
+  border-radius: 0 5px 5px 0;
+
+  overflow: scroll;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+
+  ::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+
+  @media (max-width: 1248px) {
+    width: 100%;
+    margin: 25px 0 0 0;
+    border: none;
+    border-radius: 3px;
+  }
+`
+const ListHeader = styled.h3`
+  margin: 25px 0 0 25px;
+  color: #333333;
+`
+
+
+const IntersectionContainer = styled.div`
+  height: 125px;
+  background-color: #fff;
+  margin: 25px 25px 0 25px;
+  padding: 15px;
+  display: flex;
+  flex-direction: row;
+  border: 2px solid;
+  border-radius: 5px;
+
   :hover {
     cursor: pointer;
   }
 `
-const Header = styled.h1`
-
+const IntersectionLeft = styled.div`
+  width: 70%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 `
+const IntersectionRight = styled.div`
+  width: 30%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+`
+const IntersectionTitle = styled.h2`
+  color: #333333;
+  margin: 0;
+`
+const IntersectionTimeContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+`
+const IntersectionTime = styled.h3`
+  color: #333333;
+  margin: 0;
+`
+const IntersectionDuration = styled.h3`
+  color: ${props => props.color};
+  margin: 0;
+`
+const StatusIcon = styled.img`
+  width: 50px;
+  height: auto;
+`
+const StatusText = styled.h2`
+  color: #333333;
+  margin: 0;
+`
+
 
 const MapContainer = styled.div`
   position: relative;
-  width: 60vw;
-`
+  width: 70vw;
+  height: 85vh;
+  margin-right: 25px;
+  border: 3px solid #eeeeee;
+  border-radius: 5px;
 
-const ListContainer = styled.div`
-  width: 40%;
-  background-color: #eeeeee;
+  @media (max-width: 1248px) {
+    margin: 0;
+    border-left: none;
+    border-right: none;
+    width: 100%;
+    height: 50vh;
+  }
 `
-
