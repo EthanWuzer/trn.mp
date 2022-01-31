@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import{
   GoogleMap,
-  LoadScript,
   Marker,
-  InfoWindow,
-  useLoadScript,
 } from "@react-google-maps/api"
 import styled from "styled-components";
 
