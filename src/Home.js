@@ -9,54 +9,62 @@ import styled from "styled-components";
 
 import moment from 'moment';
 
-import { formatRelative } from "date-fns";
 import mapStyles from "./styles/mapStyles";
 import { getDefaultNormalizer } from "@testing-library/react";
 
-const libraries = ["places"];
+const colorRed = `#E81A24`;
+const colorGreen = `#0DA245`;
 
 function Map(props) {
-    // console.log(Object.entries(props.locations));
+  const [mapRef, setMapRef] = useState(null);
 
-    return (
-      <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
-        <GoogleMap 
-          mapContainerStyle={{
-            width: "70vw",
-            height: "85vh"
-          }}
-          zoom={12} 
-          center={props.center}
-          options={{styles: mapStyles}}>
-          {props.locations.map(marker =>
-          {
-            // console.log("Marker: ", Object.entries(marker));
-            // console.log("Maker Status: ", marker.status);
-            return(
-            <Marker 
-              key={marker.id} 
-              position ={{lat:marker.latitude, lng:marker.longitude}} 
-              icon ={{
-                url: marker.status ? '/logo192.png' : '/train-outline.svg',
-                scaledSize: new window.google.maps.Size(30,30),
-              }}
-            />
-            )}
+  const handleCenterChanged = () => {
+    if (mapRef) {
+      const newCenter = mapRef.getCenter().toJSON();
+      props.updateCenter({ lat: newCenter.lat, lng: newCenter.lng});
+    }
+  };
+
+  return (
+    <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
+      <GoogleMap 
+        mapContainerStyle={{
+          width: "100%",
+          height: "100%"
+        }}
+        onLoad={map => setMapRef(map)}
+        onDragEnd={() => handleCenterChanged()}
+        onZoomChanged={() => handleCenterChanged()}
+        zoom={props.zoomSize} 
+        center={props.center}
+        options={{styles: mapStyles}}>
+        {props.locations.map(marker =>
+        {
+          return(
+          <Marker 
+            key={marker.id} 
+            position ={{lat:marker.latitude, lng:marker.longitude}} 
+            icon ={{
+              url: marker.status ? '/logo192.png' : '/train-outline.svg',
+              scaledSize: new window.google.maps.Size(30,30),
+            }}
+          />
           )}
-        </GoogleMap>
-      </LoadScript>
-    );
-  
+        )}
+      </GoogleMap>
+    </LoadScript>
+  );
 }
 
 function Home() {
   const [centerpoint, setCenterpoint] = useState({ lat:35.08, lng:-85.04 })
+  const [zoomSize, setZoomSize] = useState(13);
   const [locations, setLocations] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(null);
 
   const getDate = (timeIn) => {
-    return moment(timeIn).format('MMMM Do YYYY, h:mm a');
+    return moment(timeIn).format('MMMM Do, h:mm a');
   }
 
   const getDuration = (timeIn) => {
@@ -93,10 +101,10 @@ function Home() {
   }, [])
 
   
-
-  const handleClick = useCallback(() => {
-    setCenterpoint({lat:33, lng:-84})
-  });
+  const handleClick = useCallback((latitude, longitude) => {
+    setCenterpoint({lat: latitude, lng: longitude});
+    setZoomSize(16);
+  }, []);
 
   return(
       <HomeContainer>
@@ -104,17 +112,23 @@ function Home() {
         <InnerContainer>
           <ListContainer>
             <ListHeader>
-              intersections.
+              crossings.
             </ListHeader>
-            {locations.map(intersection => {
-              // console.log("Intersection: ", intersection);
-              return (
+            {locations.map(intersection => (
                 <IntersectionContainer
                   key={intersection.id}
-                  onClick={(e) => handleClick()}
+                  onClick={(e) => handleClick(intersection.latitude, intersection.longitude)}
+                  style={{borderColor: intersection.status ? colorRed : colorGreen}}
                 >
                   <IntersectionLeft>
                     <IntersectionTitle>{intersection.title}</IntersectionTitle>
+                    <IntersectionTimeContainer>
+                      <IntersectionTime style={{color: intersection.status ? colorRed : colorGreen}}>Since: {intersection.start}</IntersectionTime>
+                      {intersection.status ?
+                        <IntersectionDuration color={colorRed}>Duration: {intersection.duration}</IntersectionDuration>
+                        : null
+                      }
+                    </IntersectionTimeContainer>
                   </IntersectionLeft>
                   <IntersectionRight>
                     {intersection.status ? 
@@ -122,14 +136,14 @@ function Home() {
                       :
                       <StatusIcon alt="Clear Icon" src="/train-outline.svg" />
                     }
-                    <StatusText>{intersection.status ? 'Blocked' : 'Clear'}</StatusText>
+                    <StatusText style={{color: intersection.status ? colorRed : colorGreen}}>{intersection.status ? 'Blocked' : 'Clear'}</StatusText>
                   </IntersectionRight>
                 </IntersectionContainer>
               )
-            })}
+            )}
           </ListContainer>
           <MapContainer>
-            <Map center={centerpoint} locations={locations}/>
+            <Map center={centerpoint} locations={locations} zoomSize={zoomSize} updateCenter={setCenterpoint}/>
           </MapContainer>
         </InnerContainer>
       </HomeContainer>
@@ -143,20 +157,27 @@ const HomeContainer = styled.div`
   flex-direction: column;
 `
 const Header = styled.h1`
-  margin-left: 25px;
+  margin: 25px;
+  color: #333333;
 `
 const InnerContainer = styled.div`
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+
+  @media (max-width: 1248px) {
+    flex-direction: column-reverse;
+  }
 `
 
 
 const ListContainer = styled.div`
-  width: 100%;
+  position: relative;
+  width: 30vw;
   height: 85vh;
   margin: 0 25px 0 0;
   background-color: #eeeeee;
+  border: 3px solid #eeeeee;
   border-radius: 0 5px 5px 0;
 
   overflow: scroll;
@@ -166,18 +187,28 @@ const ListContainer = styled.div`
   ::-webkit-scrollbar {
     display: none; /* Chrome, Safari and Opera */
   }
+
+  @media (max-width: 1248px) {
+    width: 100%;
+    margin: 25px 0 0 0;
+    border: none;
+    border-radius: 3px;
+  }
 `
 const ListHeader = styled.h3`
   margin: 25px 0 0 25px;
+  color: #333333;
 `
 
 
 const IntersectionContainer = styled.div`
-  height: 150px;
+  height: 125px;
   background-color: #fff;
   margin: 25px 25px 0 25px;
+  padding: 15px;
   display: flex;
   flex-direction: row;
+  border: 2px solid;
   border-radius: 5px;
 
   :hover {
@@ -185,32 +216,57 @@ const IntersectionContainer = styled.div`
   }
 `
 const IntersectionLeft = styled.div`
-  width: 100%;
+  width: 70%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 `
 const IntersectionRight = styled.div`
-  width: 100%;
+  width: 30%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-end;
 `
 const IntersectionTitle = styled.h2`
-
+  color: #333333;
+  margin: 0;
+`
+const IntersectionTimeContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+`
+const IntersectionTime = styled.h3`
+  color: #333333;
+  margin: 0;
+`
+const IntersectionDuration = styled.h3`
+  color: ${props => props.color};
+  margin: 0;
 `
 const StatusIcon = styled.img`
   width: 50px;
   height: auto;
-
 `
 const StatusText = styled.h2`
-  
+  color: #333333;
+  margin: 0;
 `
 
 
 const MapContainer = styled.div`
-  border-radius: 5px 0 0 5px;
   position: relative;
+  width: 70vw;
+  height: 85vh;
+  margin-right: 25px;
+  border: 3px solid #eeeeee;
+  border-radius: 5px;
+
+  @media (max-width: 1248px) {
+    margin: 0;
+    border-left: none;
+    border-right: none;
+    width: 100%;
+    height: 50vh;
+  }
 `
