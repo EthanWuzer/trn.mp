@@ -4,8 +4,24 @@ import{
   LoadScript,
   Marker,
   InfoWindow,
+  useLoadScript,
 } from "@react-google-maps/api"
 import styled from "styled-components";
+
+import usePlacesAutocomplete, {
+  getGeocode,
+  getLatLng,
+} from "use-places-autocomplete";
+
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxPopover,
+  ComboboxList,
+  ComboboxOption,
+} from "@reach/combobox";
+
+import "@reach/combobox/styles.css"
 
 import moment from 'moment';
 
@@ -25,8 +41,9 @@ function Map(props) {
     }
   };
 
+
   return (
-    <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
+
       <GoogleMap 
         mapContainerStyle={{
           width: "100%",
@@ -52,10 +69,42 @@ function Map(props) {
           )}
         )}
       </GoogleMap>
-    </LoadScript>
+
   );
+
 }
 
+function Search(){
+  const {
+    ready,
+    value,
+    suggestions: { status, data },
+    setValue,
+    clearSuggestions
+  } = usePlacesAutocomplete();
+
+  const handleInput = (e) => {
+    setValue(e.target.value);
+  };
+
+  const handleSelect = (val) => {
+    setValue(val, false);
+  };
+
+  return (
+    <Combobox onSelect={handleSelect}>
+      <ComboboxInput value={value} onChange={handleInput} disabled={!ready} />
+      <ComboboxPopover>
+        <ComboboxList>
+          {status === "OK" &&
+            data.map(({ place_id, description }) => (
+              <ComboboxOption key={place_id} value={description} />
+            ))}
+        </ComboboxList>
+      </ComboboxPopover>
+    </Combobox>
+  );
+}
 function Home() {
   const [centerpoint, setCenterpoint] = useState({ lat:35.08, lng:-85.04 })
   const [zoomSize, setZoomSize] = useState(13);
