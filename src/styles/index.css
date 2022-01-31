@@ -21,3 +21,12 @@ code {
   max-width: 400px;
   z-index: 1100 !important;
 }
+
+.locate {
+  position: absolute;
+  top: 1rem;
+  right: 3rem;
+  background: none;
+  border: none;
+  z-index: 10;
+}

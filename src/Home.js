@@ -87,6 +87,7 @@ function Map(props) {
   );
 }
 
+
 function Crossing(props) {
   return (
     <IntersectionContainer
@@ -115,7 +116,27 @@ function Crossing(props) {
   )
 };
 
-function Search(){
+
+function Locate(props){
+  return (
+    <button className="locate" onClick={() =>{
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          props.setLocations(sortLocations(props.locations, {lat: position.coords.latitude, lng: position.coords.longitude}));
+          props.updateCenter({
+            lat:position.coords.latitude,
+            lng:position.coords.longitude,
+          })
+        }, 
+        () => null)
+    }}>
+      <img src="compass.svg" alt="compass - locate me"/>
+    </button>
+    )
+}
+
+function Search(props){
+
   const {
     ready,
     value,
@@ -130,9 +151,20 @@ function Search(){
 
   const handleSelect = (val) => {
     setValue(val, false);
+    getGeocode({ address: val })
+      .then((results) => getLatLng(results[0]))
+      .then(({ lat, lng }) => {
+        console.log("Coordinates: ", { lat, lng });
+        props.setLocations(sortLocations(props.locations, {lat: lat, lng: lng}));
+        props.updateCenter({lat: lat,lng: lng});
+      })
+      .catch((error) => {
+        console.log("Error: ", error);
+      });
   };
 
   return (
+    <div className="search">
     <Combobox onSelect={handleSelect}>
       <ComboboxInput value={value} onChange={handleInput} disabled={!ready} />
       <ComboboxPopover>
@@ -144,6 +176,7 @@ function Search(){
         </ComboboxList>
       </ComboboxPopover>
     </Combobox>
+    </div>
   );
 }
 
@@ -200,8 +233,6 @@ function Home() {
   )
   }, [])
 
-  
-  
   const handleClick = (latitude, longitude) => {
     setCenterpoint({lat: latitude, lng: longitude});
     setZoomSize(16);
@@ -231,6 +262,8 @@ function Home() {
             )}
           </ListContainer>
           <MapContainer>
+            <Search setLocations={setLocations} locations={locations} updateCenter={setCenterpoint}/>
+            <Locate setLocations={setLocations} locations={locations} updateCenter={setCenterpoint}/>
             <Map center={centerpoint} setLocations={setLocations} locations={locations} zoomSize={zoomSize} updateCenter={setCenterpoint}/>
           </MapContainer>
         </InnerContainer>
