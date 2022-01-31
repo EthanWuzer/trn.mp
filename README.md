@@ -3,7 +3,7 @@ Web application that provides real-time railroad crossing activity information b
 
 
 # Required Dependencies
-Can be installed individually or together by runnning: `npm install`
+Can be installed individually or together by running: `npm install`
 
 - react-google-maps
     - `npm i -S @react-google-maps/api`
