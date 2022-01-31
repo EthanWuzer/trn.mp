@@ -92,6 +92,7 @@ function Search(){
   };
 
   return (
+    <div className="search">
     <Combobox onSelect={handleSelect}>
       <ComboboxInput value={value} onChange={handleInput} disabled={!ready} />
       <ComboboxPopover>
@@ -103,6 +104,7 @@ function Search(){
         </ComboboxList>
       </ComboboxPopover>
     </Combobox>
+    </div>
   );
 }
 function Home() {
@@ -192,6 +194,7 @@ function Home() {
             )}
           </ListContainer>
           <MapContainer>
+            <Search />
             <Map center={centerpoint} locations={locations} zoomSize={zoomSize} updateCenter={setCenterpoint}/>
           </MapContainer>
         </InnerContainer>
