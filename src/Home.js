@@ -121,13 +121,16 @@ function Crossing(props) {
   )
 };
 
-
+// This is the function called to locate the user based on the browsers geolocation service
 function Locate(props){
+  // All it does is return a container that contains the latitude and longitude reciueved from the geolocation service
   return (
     <LocateContainer
       onClick={() =>{
+        //Uses navigator.geolocation, created by firefox. Compatible with all modern browsers
         navigator.geolocation.getCurrentPosition(
           (position) => {
+            //Here is where it re sorts the markers based on distance and sets the new centerpoint
             props.setLocations(sortLocations(props.locations, {lat: position.coords.latitude, lng: position.coords.longitude}));
             props.updateCenter({
               lat:position.coords.latitude,
@@ -144,6 +147,7 @@ function Locate(props){
     )
 }
 
+//This app uses use-places-autocomplete alongside combobox to search
 function Search(props){
 
   const {
@@ -153,17 +157,19 @@ function Search(props){
     setValue,
     clearSuggestions
   } = usePlacesAutocomplete();
+  //usePlacesAutocomplete uses the Google places API to generate search results
 
   const handleInput = (e) => {
     setValue(e.target.value);
   };
 
+  //When a suggestion is selected, the geocode is turned into a lat and lng value
   const handleSelect = (val) => {
     setValue(val, false);
     getGeocode({ address: val })
       .then((results) => getLatLng(results[0]))
       .then(({ lat, lng }) => {
-        console.log("Coordinates: ", { lat, lng });
+        //The markers are then reorganized and the centerpoint changed to the selected location
         props.setLocations(sortLocations(props.locations, {lat: lat, lng: lng}));
         props.updateCenter({lat: lat,lng: lng});
         props.setZoom(13);
@@ -174,12 +180,14 @@ function Search(props){
   };
 
   return (
+    //This function returns a container containg the autocomplete results in a combobox.
     <SearchContainer onSelect={handleSelect}>
       <ComboboxInput value={value} onChange={handleInput} disabled={!ready} placeholder="Search"/>
       <ComboboxPopover>
         <ComboboxList>
           {status === "OK" &&
             data.map(({ place_id, description }) => (
+              //Each suggestion comes with its own unique id, and a description
               <ComboboxOption key={place_id} value={description} />
             ))}
         </ComboboxList>
