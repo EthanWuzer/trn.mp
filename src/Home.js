@@ -62,7 +62,7 @@ function Map(props) {
 
 
 // Main View Component
-function Home() {
+export default function Home() {
   // Initialize State Variables
   const [centerpoint, setCenterpoint] = useState({ lat: 39.828175, lng: -98.5795 })
   const [zoomSize, setZoomSize] = useState(5);
@@ -167,9 +167,6 @@ function Home() {
       </HomeContainer>
   );
 }
-
-export default Home;
-
 
 // BEGIN -- General Styles
 const HomeContainer = styled.div`
