@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect} from "react";
 import{
   GoogleMap,
   Marker,
@@ -28,21 +28,27 @@ import { getDefaultNormalizer } from "@testing-library/react";
 const colorRed = `#E81A24`;
 const colorGreen = `#0DA245`;
 
+// Accepts array of Locations and Center Point. Sorts by nearest to center.
 function sortLocations(locations, center) {
   // https://www.tutorialspoint.com/sort-array-of-points-by-ascending-distance-from-a-given-point-javascript
-const distance = (coor1, coor2) => {
-  const x = coor2.lat - coor1.latitude;
-  const y = coor2.lng - coor1.longitude;
-  return Math.sqrt((x*x) + (y*y));
+
+  // Find distance from center
+  const distance = (coor1, coor2) => {
+    const x = coor2.lat - coor1.latitude;
+    const y = coor2.lng - coor1.longitude;
+    return Math.sqrt((x*x) + (y*y));
+  };
+
+  // Sort by distance from center
+  const sorter = (a, b) => distance(a, center) - distance(b, center);
+  return locations.sort(sorter);
 };
 
-const sorter = (a, b) => distance(a, center) - distance(b, center);
-return locations.sort(sorter);
-};
-
+// Outputs Google Map Component
 function Map(props) {
   const [mapRef, setMapRef] = useState(null);
 
+  // On map view change -> updates center state variable and re-sorts locations
   const handleCenterChanged = () => {
     if (mapRef) {
       const newCenter = mapRef.getCenter().toJSON();
@@ -80,17 +86,18 @@ function Map(props) {
           )}
         )}
       </GoogleMap>
-
   );
 }
 
-
+// Outputs A Single Crossing Visual Component
 function Crossing(props) {
   return (
+    // Main Container
     <IntersectionContainer
       onClick={(e) => props.onClick(props.latitude, props.longitude)}
       style={{borderColor: props.status ? colorRed : colorGreen}}
     >
+      {/* Left Side of Container Including Title & Time Information */}
       <IntersectionLeft>
         <IntersectionTitle>{props.title}</IntersectionTitle>
         <IntersectionTimeContainer>
@@ -101,6 +108,7 @@ function Crossing(props) {
           }
         </IntersectionTimeContainer>
       </IntersectionLeft>
+      {/* Right Side of Container Including State Icon & Text */}
       <IntersectionRight>
         {props.status ? 
           <StatusIcon alt="Blocked Icon" src="/blocked.svg" />
@@ -116,19 +124,23 @@ function Crossing(props) {
 
 function Locate(props){
   return (
-    <button className="locate" onClick={() =>{
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          props.setLocations(sortLocations(props.locations, {lat: position.coords.latitude, lng: position.coords.longitude}));
-          props.updateCenter({
-            lat:position.coords.latitude,
-            lng:position.coords.longitude,
-          })
-        }, 
-        () => null)
-    }}>
+    <LocateContainer
+      onClick={() =>{
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            props.setLocations(sortLocations(props.locations, {lat: position.coords.latitude, lng: position.coords.longitude}));
+            props.updateCenter({
+              lat:position.coords.latitude,
+              lng:position.coords.longitude,
+            });
+            props.setZoom(12);
+          }, 
+          () => null
+        )
+      }}
+    >
       <img src="compass.svg" alt="compass - locate me"/>
-    </button>
+    </LocateContainer>
     )
 }
 
@@ -154,6 +166,7 @@ function Search(props){
         console.log("Coordinates: ", { lat, lng });
         props.setLocations(sortLocations(props.locations, {lat: lat, lng: lng}));
         props.updateCenter({lat: lat,lng: lng});
+        props.setZoom(13);
       })
       .catch((error) => {
         console.log("Error: ", error);
@@ -161,9 +174,8 @@ function Search(props){
   };
 
   return (
-    <div className="search">
-    <Combobox onSelect={handleSelect}>
-      <ComboboxInput value={value} onChange={handleInput} disabled={!ready} />
+    <SearchContainer onSelect={handleSelect}>
+      <ComboboxInput value={value} onChange={handleInput} disabled={!ready} placeholder="Search"/>
       <ComboboxPopover>
         <ComboboxList>
           {status === "OK" &&
@@ -172,26 +184,29 @@ function Search(props){
             ))}
         </ComboboxList>
       </ComboboxPopover>
-    </Combobox>
-    </div>
+    </SearchContainer>
   );
 }
 
+// Main View Component
 function Home() {
+  // Initialize State Variables
   const [centerpoint, setCenterpoint] = useState({ lat: 39.828175, lng: -98.5795 })
   const [zoomSize, setZoomSize] = useState(5);
   const [locations, setLocations] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(null);
 
+  // Returns Date in Readable Format
   const getDate = (timeIn) => {
     return moment(timeIn).format('MMMM Do, h:mm a');
   }
-
+  // Returns Amount of Time From Current to the Provided Time
   const getDuration = (timeIn) => {
     return moment(timeIn).fromNow(); 
   }
 
+  // Call API and Modify Object to Include State & Times
   useEffect(() => {
     async function fetchData() {
       await fetch("http://train.jpeckham.com:5000/location")
@@ -219,6 +234,8 @@ function Home() {
         )
     }
     fetchData();
+
+    // Get User Location & Update Map View/List Sorting Accordingly
     navigator.geolocation.getCurrentPosition(
     (position) => {
       setCenterpoint({
@@ -230,6 +247,7 @@ function Home() {
   )
   }, [])
 
+  // Change Map View and List Sorting On Click of A Crossing
   const handleClick = (latitude, longitude) => {
     setCenterpoint({lat: latitude, lng: longitude});
     setZoomSize(16);
@@ -238,12 +256,19 @@ function Home() {
 
   return(
       <HomeContainer>
-        <Header>trn.mp</Header>
+        <HeaderContainer>
+          {/* Header Text */}
+          <Header>trn.mp</Header>
+          {/* Search Bar Component */}
+          <Search setLocations={setLocations} locations={locations} updateCenter={setCenterpoint} setZoom={setZoomSize}/>
+        </HeaderContainer>
         <InnerContainer>
+          {/* List of Crossings Container */}
           <ListContainer>
             <ListHeader>
               crossings.
             </ListHeader>
+            {/* Output Crossing Component for All Crossings in Array */}
             {locations.map(intersection => (
                 <Crossing
                 key={intersection.id}
@@ -258,9 +283,11 @@ function Home() {
               />)
             )}
           </ListContainer>
+          {/* Map Container */}
           <MapContainer>
-            <Search setLocations={setLocations} locations={locations} updateCenter={setCenterpoint}/>
-            <Locate setLocations={setLocations} locations={locations} updateCenter={setCenterpoint}/>
+            {/* Button to Bring View Back to User's Current Location */}
+            <Locate setLocations={setLocations} locations={locations} updateCenter={setCenterpoint} setZoom={setZoomSize}/>
+            {/* Map Component */}
             <Map center={centerpoint} setLocations={setLocations} locations={locations} zoomSize={zoomSize} updateCenter={setCenterpoint}/>
           </MapContainer>
         </InnerContainer>
@@ -270,13 +297,39 @@ function Home() {
 
 export default Home;
 
+// BEGIN -- General Styles
 const HomeContainer = styled.div`
   display: flex;
   flex-direction: column;
 `
+// END -- General Styles
+
+// BEGIN -- HeaderContainer Styles
+const HeaderContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+`
 const Header = styled.h1`
   margin: 25px;
   color: #333333;
+`
+const SearchContainer = styled(Combobox)`
+  display: flex;
+
+  input {
+    width: 20vw;
+    border: 2px solid #eeeeee;
+    border-radius: 5px;
+    margin: auto 25px;
+    font-size: 1rem;
+    color: #333333;
+    padding: 10px;
+
+    @media (max-width: 1248px) {
+      width: 40vw;
+    }
+  }
 `
 const InnerContainer = styled.div`
   display: flex;
@@ -287,8 +340,9 @@ const InnerContainer = styled.div`
     flex-direction: column-reverse;
   }
 `
+// END -- HeaderContainer Styles
 
-
+// BEGIN -- ListContainer Styles
 const ListContainer = styled.div`
   position: relative;
   width: 30vw;
@@ -317,8 +371,9 @@ const ListHeader = styled.h3`
   margin: 25px 0 0 25px;
   color: #333333;
 `
+// END -- ListContainer Styles
 
-
+// BEGIN -- IntersectionContainer Styles
 const IntersectionContainer = styled.div`
   height: 125px;
   background-color: #fff;
@@ -370,8 +425,9 @@ const StatusText = styled.h2`
   color: #333333;
   margin: 0;
 `
+// END -- IntersectionContainer Styles
 
-
+// BEGIN -- MapContainer Styles
 const MapContainer = styled.div`
   position: relative;
   width: 70vw;
@@ -388,3 +444,23 @@ const MapContainer = styled.div`
     height: 50vh;
   }
 `
+const LocateContainer = styled.button`
+  background: rgb(255, 255, 255) none repeat scroll 0% 0%;
+  border: 0px none;
+  margin: 10px;
+  padding: 0px;
+  text-transform: none;
+  appearance: none;
+  position: absolute;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 2px;
+  height: 40px;
+  width: 40px;
+  box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 4px -1px;
+  overflow: hidden;
+  top: 50px;
+  right: 0px;
+  z-index: 5;
+`
+// END -- MapContainer Styles
