@@ -31,6 +31,18 @@ import { getDefaultNormalizer } from "@testing-library/react";
 const colorRed = `#E81A24`;
 const colorGreen = `#0DA245`;
 
+function sortLocations(locations, center) {
+  // https://www.tutorialspoint.com/sort-array-of-points-by-ascending-distance-from-a-given-point-javascript
+const distance = (coor1, coor2) => {
+  const x = coor2.lat - coor1.latitude;
+  const y = coor2.lng - coor1.longitude;
+  return Math.sqrt((x*x) + (y*y));
+};
+
+const sorter = (a, b) => distance(a, center) - distance(b, center);
+return locations.sort(sorter);
+};
+
 function Map(props) {
   const [mapRef, setMapRef] = useState(null);
 
@@ -38,18 +50,20 @@ function Map(props) {
     if (mapRef) {
       const newCenter = mapRef.getCenter().toJSON();
       props.updateCenter({ lat: newCenter.lat, lng: newCenter.lng});
+      props.setLocations(sortLocations(props.locations, newCenter));
     }
   };
 
-
   return (
-
       <GoogleMap 
         mapContainerStyle={{
           width: "100%",
           height: "100%"
         }}
-        onLoad={map => setMapRef(map)}
+        onLoad={map => {
+          setMapRef(map);
+          props.setLocations(sortLocations(props.locations, props.centerpoint));
+        }}
         onDragEnd={() => handleCenterChanged()}
         onZoomChanged={() => handleCenterChanged()}
         zoom={props.zoomSize} 
@@ -71,8 +85,35 @@ function Map(props) {
       </GoogleMap>
 
   );
-
 }
+
+function Crossing(props) {
+  return (
+    <IntersectionContainer
+      onClick={(e) => props.onClick(props.latitude, props.longitude)}
+      style={{borderColor: props.status ? colorRed : colorGreen}}
+    >
+      <IntersectionLeft>
+        <IntersectionTitle>{props.title}</IntersectionTitle>
+        <IntersectionTimeContainer>
+          <IntersectionTime style={{color: props.status ? colorRed : colorGreen}}>Since: {props.start}</IntersectionTime>
+          {props.status ?
+            <IntersectionDuration color={colorRed}>Duration: {props.duration}</IntersectionDuration>
+            : null
+          }
+        </IntersectionTimeContainer>
+      </IntersectionLeft>
+      <IntersectionRight>
+        {props.status ? 
+          <StatusIcon alt="Blocked Icon" src="/logo192.png" />
+          :
+          <StatusIcon alt="Clear Icon" src="/train-outline.svg" />
+        }
+        <StatusText style={{color: props.status ? colorRed : colorGreen}}>{props.status ? 'Blocked' : 'Clear'}</StatusText>
+      </IntersectionRight>
+    </IntersectionContainer>
+  )
+};
 
 function Search(){
   const {
@@ -105,9 +146,10 @@ function Search(){
     </Combobox>
   );
 }
+
 function Home() {
-  const [centerpoint, setCenterpoint] = useState({ lat:35.08, lng:-85.04 })
-  const [zoomSize, setZoomSize] = useState(13);
+  const [centerpoint, setCenterpoint] = useState({ lat: 39.828175, lng: -98.5795 })
+  const [zoomSize, setZoomSize] = useState(5);
   const [locations, setLocations] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(null);
@@ -147,13 +189,24 @@ function Home() {
         )
     }
     fetchData();
+    navigator.geolocation.getCurrentPosition(
+    (position) => {
+      setCenterpoint({
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      });
+      setZoomSize(13);
+    }, () => null
+  )
   }, [])
 
   
-  const handleClick = useCallback((latitude, longitude) => {
+  
+  const handleClick = (latitude, longitude) => {
     setCenterpoint({lat: latitude, lng: longitude});
     setZoomSize(16);
-  }, []);
+    setLocations(sortLocations(locations, {lat: latitude, lng: longitude}));
+  };
 
   return(
       <HomeContainer>
@@ -164,35 +217,21 @@ function Home() {
               crossings.
             </ListHeader>
             {locations.map(intersection => (
-                <IntersectionContainer
-                  key={intersection.id}
-                  onClick={(e) => handleClick(intersection.latitude, intersection.longitude)}
-                  style={{borderColor: intersection.status ? colorRed : colorGreen}}
-                >
-                  <IntersectionLeft>
-                    <IntersectionTitle>{intersection.title}</IntersectionTitle>
-                    <IntersectionTimeContainer>
-                      <IntersectionTime style={{color: intersection.status ? colorRed : colorGreen}}>Since: {intersection.start}</IntersectionTime>
-                      {intersection.status ?
-                        <IntersectionDuration color={colorRed}>Duration: {intersection.duration}</IntersectionDuration>
-                        : null
-                      }
-                    </IntersectionTimeContainer>
-                  </IntersectionLeft>
-                  <IntersectionRight>
-                    {intersection.status ? 
-                      <StatusIcon alt="Blocked Icon" src="/logo192.png" />
-                      :
-                      <StatusIcon alt="Clear Icon" src="/train-outline.svg" />
-                    }
-                    <StatusText style={{color: intersection.status ? colorRed : colorGreen}}>{intersection.status ? 'Blocked' : 'Clear'}</StatusText>
-                  </IntersectionRight>
-                </IntersectionContainer>
-              )
+                <Crossing
+                key={intersection.id}
+                id={intersection.id}
+                latitude={intersection.latitude}
+                longitude={intersection.longitude}
+                status={intersection.status}
+                title={intersection.title}
+                start={intersection.start}
+                duration={intersection.duration}
+                onClick={handleClick}
+              />)
             )}
           </ListContainer>
           <MapContainer>
-            <Map center={centerpoint} locations={locations} zoomSize={zoomSize} updateCenter={setCenterpoint}/>
+            <Map center={centerpoint} setLocations={setLocations} locations={locations} zoomSize={zoomSize} updateCenter={setCenterpoint}/>
           </MapContainer>
         </InnerContainer>
       </HomeContainer>
